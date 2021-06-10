@@ -42,9 +42,14 @@ contract Access {
         return addressWithAccess[_id][_addr];
     }
     
-    function withdraw (uint256 _id) onlyAssetOwner(_id) public {
+    function withdraw(uint256 _id) onlyAssetOwner(_id) public {
         address payable assetOwner = payable(msg.sender);
         pendingWithdrawals[_id] = 0;
         assetOwner.transfer(pendingWithdrawals[_id]);
+    }
+
+    // admin
+    function changeFee(uint256 _id, uint256 _fee) onlyAssetOwner(_id) public {
+        feeAmount[_id] = _fee;
     }
 }
