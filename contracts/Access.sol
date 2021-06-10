@@ -17,7 +17,7 @@ contract Access {
     mapping(uint256 => uint) pendingWithdrawals;
     mapping(uint256 => address) owners;
 
-    modifier onlyOwner (uint256 _id) {
+    modifier onlyAssetOwner (uint256 _id) {
         require(owners[_id] == msg.sender, "Only the asset owner can call this function");
         _;
     }
@@ -42,7 +42,7 @@ contract Access {
         return addressWithAccess[_id][_addr];
     }
     
-    function withdraw (uint256 _id) onlyOwner(_id) public {
+    function withdraw (uint256 _id) onlyAssetOwner(_id) public {
         address payable assetOwner = payable(msg.sender);
         pendingWithdrawals[_id] = 0;
         assetOwner.transfer(pendingWithdrawals[_id]);
