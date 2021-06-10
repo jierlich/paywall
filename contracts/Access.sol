@@ -15,10 +15,10 @@ contract Access {
     mapping(uint256 => mapping(address => bool)) addressWithAccess;
     mapping(uint256 => uint256) feeAmount;
     mapping(uint256 => uint) pendingWithdrawals;
-    mapping(uint256 => address) owner;
+    mapping(uint256 => address) owners;
 
     modifier onlyOwner (uint256 _id) {
-        require(owner[_id] == msg.sender, "Only the asset owner can call this function");
+        require(owners[_id] == msg.sender, "Only the asset owner can call this function");
         _;
     }
     
@@ -27,7 +27,7 @@ contract Access {
     function create(uint256 _fee, address _owner) public returns (uint256) {
         counter += 1;
         feeAmount[counter] = _fee;
-        owner[counter] = _owner;
+        owners[counter] = _owner;
         emit AssetCreated(counter, _owner);
         return counter;
     }
