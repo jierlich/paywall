@@ -52,4 +52,8 @@ contract Access {
     function changeFee(uint256 _id, uint256 _fee) onlyAssetOwner(_id) public {
         feeAmount[_id] = _fee;
     }
+
+    function changeOwner(uint256 _id, address _newOwner) onlyAssetOwner(_id) public {
+        owners[_id] = _newOwner;
+    }
 }
