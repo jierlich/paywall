@@ -17,11 +17,13 @@ describe("Access", () => {
 
     it("Should create an accessable asset", async () => {
         // Static call verifies correct return value without altering state
-        const createCallStatic = await this.access.callStatic.create(bnHundred, this.signers[0].address)
+        const createCallStatic = await this.access.connect(this.signers[0])
+            .callStatic.create(bnHundred, this.signers[0].address)
         expect(createCallStatic).to.equal(bnOne)
 
         // Non-static call changes state and checks emitted event
-        const createCall = await this.access.create(bnHundred, this.signers[0].address)
+        const createCall = await this.access.connect(this.signers[0])
+            .create(bnHundred, this.signers[0].address)
         await expect(createCall).to.emit(this.access, ASSET_CREATED)
             .withArgs(new ethers.BigNumber.from(1), this.signers[0].address)
     })
