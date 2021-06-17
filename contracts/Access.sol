@@ -15,7 +15,7 @@ contract Access {
     mapping(uint256 => mapping(address => bool)) public addressWithAccess;
     mapping(uint256 => uint256) feeAmount;
     mapping(uint256 => uint) pendingWithdrawals;
-    mapping(uint256 => address) owners;
+    mapping(uint256 => address payable) owners;
 
     modifier onlyAssetOwner (uint256 _id) {
         require(owners[_id] == msg.sender, "Only the asset owner can call this function");
@@ -27,7 +27,7 @@ contract Access {
     function create(uint256 _fee, address _owner) public returns (uint256) {
         counter += 1;
         feeAmount[counter] = _fee;
-        owners[counter] = _owner;
+        owners[counter] = payable(_owner);
         emit AssetCreated(counter, _owner);
         return counter;
     }
@@ -39,7 +39,7 @@ contract Access {
     }
     
     function withdraw(uint256 _id) onlyAssetOwner(_id) public {
-        address payable assetOwner = payable(msg.sender);
+        address payable assetOwner = owners[_id];
         pendingWithdrawals[_id] = 0;
         assetOwner.transfer(pendingWithdrawals[_id]);
     }
@@ -50,6 +50,6 @@ contract Access {
     }
 
     function changeOwner(uint256 _id, address _newOwner) onlyAssetOwner(_id) public {
-        owners[_id] = _newOwner;
+        owners[_id] = payable(_newOwner);
     }
 }
