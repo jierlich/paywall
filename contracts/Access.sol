@@ -10,6 +10,7 @@ pragma solidity >=0.7.0 <0.9.0;
 contract Access {
 
     uint256 counter;
+    uint contractFee;
 
     // asset -> wallet -> hasAccess
     mapping(uint256 => mapping(address => bool)) public addressHasAccess;
