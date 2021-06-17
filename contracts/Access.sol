@@ -35,6 +35,7 @@ contract Access {
     
     function grantAccess(uint256 _id, address _addr) public payable {
         require(msg.value == feeAmount[_id], 'Incorrect fee amount');
+        require(_id > counter, 'Asset does not exist');
         pendingWithdrawals[_id] += msg.value;
         addressHasAccess[_id][_addr] = true;
     }
