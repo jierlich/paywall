@@ -2,6 +2,8 @@
 
 pragma solidity >=0.7.0 <0.9.0;
 
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+
 /**
  * @title Access
  * @dev Check if a user has access to a non-crypto digital asset
@@ -10,12 +12,16 @@ pragma solidity >=0.7.0 <0.9.0;
 contract Access {
 
     uint256 counter;
+    // 100% = 10000
+    uint constant contractFeeBase = 10000;
     uint contractFee;
+    uint feeMultiplier;
+    uint public contractFeesAccrued;
 
     // asset -> wallet -> hasAccess
     mapping(uint256 => mapping(address => bool)) public addressHasAccess;
     mapping(uint256 => uint256) public feeAmount;
-    mapping(uint256 => uint) pendingWithdrawals;
+    mapping(uint256 => uint) public pendingWithdrawals;
     mapping(uint256 => address payable) public owners;
 
     modifier onlyAssetOwner (uint256 _id) {
@@ -24,6 +30,10 @@ contract Access {
     }
     
     event AssetCreated(uint256 indexed _id, address _owner);
+
+    constructor() {
+        contractFee = 100;
+    }
 
     function create(uint256 _fee, address _owner) public returns (uint256) {
         counter += 1;
@@ -35,8 +45,11 @@ contract Access {
     
     function grantAccess(uint256 _id, address _addr) public payable {
         require(msg.value == feeAmount[_id], 'Incorrect fee amount');
-        require(_id > counter, 'Asset does not exist');
-        pendingWithdrawals[_id] += msg.value;
+        require(_id <= counter, 'Asset does not exist');
+        uint contractFeeAmount = SafeMath.div(SafeMath.mul(msg.value, contractFee), contractFeeBase);
+        uint ownerFeeAmount = SafeMath.sub(msg.value, contractFeeAmount);
+        pendingWithdrawals[_id] += ownerFeeAmount;
+        contractFeesAccrued += contractFeeAmount;
         addressHasAccess[_id][_addr] = true;
     }
     

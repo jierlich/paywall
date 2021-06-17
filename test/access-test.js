@@ -5,7 +5,9 @@ const { ethers } = require("hardhat")
 const ASSET_CREATED = "AssetCreated"
 
 describe("Access", () => {
+    const bnZero = new ethers.BigNumber.from(0)
     const bnOne = new ethers.BigNumber.from(1)
+    const bnNinetyNine = new ethers.BigNumber.from(99)
     const bnHundred = new ethers.BigNumber.from(100)
 
     beforeEach(async () => {
@@ -34,12 +36,16 @@ describe("Access", () => {
             .create(bnHundred, this.signers[0].address)
 
         expect(await this.access.addressHasAccess(1, this.signers[1].address)).to.equal(false)
+        expect(await this.access.pendingWithdrawals(bnOne)).to.equal(bnZero)
+        expect(await this.access.contractFeesAccrued()).to.equal(bnZero)
 
         // grant access to self
         await this.access.connect(this.signers[1])
             .grantAccess(1, this.signers[1].address, {value: bnHundred})
 
         expect(await this.access.addressHasAccess(1, this.signers[1].address)).to.equal(true)
+        expect(await this.access.pendingWithdrawals(bnOne)).to.equal(bnNinetyNine)
+        expect(await this.access.contractFeesAccrued()).to.equal(bnOne)
     })
 
     it("Should only give grantee access not grantor if gifted", async () => {
@@ -49,6 +55,8 @@ describe("Access", () => {
         // grant access to other. Grantee has access, grantor does not
         expect(await this.access.addressHasAccess(1, this.signers[2].address)).to.equal(false)
         expect(await this.access.addressHasAccess(1, this.signers[3].address)).to.equal(false)
+        expect(await this.access.pendingWithdrawals(bnOne)).to.equal(bnZero)
+        expect(await this.access.contractFeesAccrued()).to.equal(bnZero)
 
         // signer 2 gifts access to signer 3
         await this.access.connect(this.signers[2])
@@ -56,5 +64,7 @@ describe("Access", () => {
 
         expect(await this.access.addressHasAccess(1, this.signers[2].address)).to.equal(false)
         expect(await this.access.addressHasAccess(1, this.signers[3].address)).to.equal(true)
+        expect(await this.access.pendingWithdrawals(bnOne)).to.equal(bnNinetyNine)
+        expect(await this.access.contractFeesAccrued()).to.equal(bnOne)
     })
 })
