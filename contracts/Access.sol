@@ -12,7 +12,7 @@ contract Access {
     uint256 counter;
 
     // asset -> wallet -> hasAccess
-    mapping(uint256 => mapping(address => bool)) public addressWithAccess;
+    mapping(uint256 => mapping(address => bool)) public addressHasAccess;
     mapping(uint256 => uint256) public feeAmount;
     mapping(uint256 => uint) pendingWithdrawals;
     mapping(uint256 => address payable) public owners;
@@ -35,7 +35,7 @@ contract Access {
     function grantAccess(uint256 _id, address _addr) public payable {
         require(msg.value == feeAmount[_id], 'Incorrect fee amount');
         pendingWithdrawals[_id] += msg.value;
-        addressWithAccess[_id][_addr] = true;
+        addressHasAccess[_id][_addr] = true;
     }
     
     function withdraw(uint256 _id) onlyAssetOwner(_id) public {
