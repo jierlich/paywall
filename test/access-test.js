@@ -27,4 +27,34 @@ describe("Access", () => {
         await expect(createCall).to.emit(this.access, ASSET_CREATED)
             .withArgs(new ethers.BigNumber.from(1), this.signers[0].address)
     })
+
+    // grant access to an asset that does exist, check access before and expect false, after and expect true
+    it("Should provide access only if granted", async () => {
+        await this.access.connect(this.signers[0])
+            .create(bnHundred, this.signers[0].address)
+
+        expect(await this.access.addressHasAccess(1, this.signers[1].address)).to.equal(false)
+
+        // grant access to self
+        await this.access.connect(this.signers[1])
+            .grantAccess(1, this.signers[1].address, {value: bnHundred})
+
+        expect(await this.access.addressHasAccess(1, this.signers[1].address)).to.equal(true)
+    })
+
+    it("Should only give grantee access not grantor if gifted", async () => {
+        await this.access.connect(this.signers[0])
+            .create(bnHundred, this.signers[0].address)
+
+        // grant access to other. Grantee has access, grantor does not
+        expect(await this.access.addressHasAccess(1, this.signers[2].address)).to.equal(false)
+        expect(await this.access.addressHasAccess(1, this.signers[3].address)).to.equal(false)
+
+        // signer 2 gifts access to signer 3
+        await this.access.connect(this.signers[2])
+            .grantAccess(1, this.signers[3].address, {value: bnHundred})
+
+        expect(await this.access.addressHasAccess(1, this.signers[2].address)).to.equal(false)
+        expect(await this.access.addressHasAccess(1, this.signers[3].address)).to.equal(true)
+    })
 })
