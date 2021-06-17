@@ -18,7 +18,7 @@ describe("Access", () => {
     it("Should create an accessable asset", async () => {
         // Static call verifies correct return value without altering state
         const createCallStatic = await this.access.callStatic.create(bnHundred, this.signers[0].address)
-        await expect(createCallStatic).to.equal(bnOne)
+        expect(createCallStatic).to.equal(bnOne)
 
         // Non-static call changes state and checks emitted event
         const createCall = await this.access.create(bnHundred, this.signers[0].address)
