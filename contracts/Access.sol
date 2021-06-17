@@ -13,9 +13,9 @@ contract Access {
 
     // asset -> wallet -> hasAccess
     mapping(uint256 => mapping(address => bool)) public addressWithAccess;
-    mapping(uint256 => uint256) feeAmount;
+    mapping(uint256 => uint256) public feeAmount;
     mapping(uint256 => uint) pendingWithdrawals;
-    mapping(uint256 => address payable) owners;
+    mapping(uint256 => address payable) public owners;
 
     modifier onlyAssetOwner (uint256 _id) {
         require(owners[_id] == msg.sender, "Only the asset owner can call this function");
