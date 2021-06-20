@@ -44,8 +44,8 @@ contract Access {
     }
     
     function grantAccess(uint256 _id, address _addr) public payable {
-        require(msg.value == feeAmount[_id], 'Incorrect fee amount');
         require(_id <= counter, 'Asset does not exist');
+        require(msg.value == feeAmount[_id], 'Incorrect fee amount');
         uint contractFeeAmount = SafeMath.div(SafeMath.mul(msg.value, contractFee), contractFeeBase);
         uint ownerFeeAmount = SafeMath.sub(msg.value, contractFeeAmount);
         pendingWithdrawals[_id] += ownerFeeAmount;
