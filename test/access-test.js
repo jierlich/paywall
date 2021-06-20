@@ -9,6 +9,7 @@ describe("Access", () => {
     const bnOne = new ethers.BigNumber.from(1)
     const bnNinetyNine = new ethers.BigNumber.from(99)
     const bnHundred = new ethers.BigNumber.from(100)
+    const bnTwoHundred = new ethers.BigNumber.from(200)
 
     beforeEach(async () => {
         const AccessContract = await ethers.getContractFactory("Access")
@@ -67,4 +68,56 @@ describe("Access", () => {
         expect(await this.access.pendingWithdrawals(bnOne)).to.equal(bnNinetyNine)
         expect(await this.access.contractFeesAccrued()).to.equal(bnOne)
     })
+
+    it("Should not grant access to a non-existent asset", async () => {
+        await expect(
+            this.access.connect(this.signers[1])
+            .grantAccess(1, this.signers[1].address, {value: bnHundred})
+        ).to.be.revertedWith("Asset does not exist")
+    })
+
+    it("Should not grant access when paid the wrong amount", async () => {
+        await this.access.connect(this.signers[0])
+            .create(bnHundred, this.signers[0].address)
+
+        await expect(
+            this.access.connect(this.signers[1])
+            .grantAccess(1, this.signers[1].address, {value: bnOne})
+        ).to.be.revertedWith("Incorrect fee amount")
+
+        await expect(
+            this.access.connect(this.signers[1])
+            .grantAccess(1, this.signers[1].address, {value: bnTwoHundred})
+        ).to.be.revertedWith("Incorrect fee amount")
+    })
+
+    it("Should only let asset owner withdraw funds", async () => {
+        await this.access.connect(this.signers[1])
+            .create(bnHundred, this.signers[1].address)
+
+        await this.access.connect(this.signers[2])
+            .grantAccess(1, this.signers[2].address, {value: bnHundred})
+
+        // non-owner attempts withdrawal
+        await expect (
+            this.access.connect(this.signers[2])
+                .withdraw(1)
+        ).to.be.revertedWith("Only the asset owner can call this function")
+
+        const initialBalance = await ethers.provider.getBalance(this.signers[1].address)
+
+        // Owner attempts withdrawal
+        const withdraw = await this.access.connect(this.signers[1]).withdraw(1)
+        const gasCost = await calculateGasCost(withdraw)
+        const expectedBalance = initialBalance.add(bnNinetyNine).sub(gasCost)
+        const newBalance = await ethers.provider.getBalance(this.signers[1].address)
+        expect(newBalance).to.equal(expectedBalance)
+    })
 })
+
+// returns the amount spent in gas in a transaction as a BN
+async function calculateGasCost(txObject) {
+    const receipt = await txObject.wait()
+    const gasUsed = receipt.gasUsed
+    return gasUsed.mul(txObject.gasPrice)
+}
