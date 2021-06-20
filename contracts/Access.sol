@@ -55,8 +55,9 @@ contract Access {
     
     function withdraw(uint256 _id) onlyAssetOwner(_id) public {
         address payable assetOwner = owners[_id];
+        uint amountToWithdraw = pendingWithdrawals[_id];
         pendingWithdrawals[_id] = 0;
-        assetOwner.transfer(pendingWithdrawals[_id]);
+        assetOwner.transfer(amountToWithdraw);
     }
 
     // admin
