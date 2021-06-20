@@ -113,6 +113,50 @@ describe("Access", () => {
         const newBalance = await ethers.provider.getBalance(this.signers[1].address)
         expect(newBalance).to.equal(expectedBalance)
     })
+
+    it("Should only let asset owner change asset owner", async () => {
+        await this.access.connect(this.signers[1])
+            .create(bnHundred, this.signers[1].address)
+
+        // fail to change owner
+        await expect(
+            this.access.connect(this.signers[2])
+                .changeAssetOwner(1, this.signers[2].address)
+        ).to.be.revertedWith("Only the asset owner can call this function")
+
+        // failed new owner not applied
+        await expect (
+            this.access.connect(this.signers[2])
+                .withdraw(1)
+        ).to.be.revertedWith("Only the asset owner can call this function")
+
+        this.access.connect(this.signers[1]).changeAssetOwner(1, this.signers[2].address)
+
+        await expect (
+            this.access.connect(this.signers[1])
+                .withdraw(1)
+        ).to.be.revertedWith("Only the asset owner can call this function")
+        this.access.connect(this.signers[2])
+                .withdraw(1)
+    })
+
+    it("Should only let asset owner change asset fee", async () => {
+        await this.access.connect(this.signers[1])
+            .create(bnHundred, this.signers[1].address)
+
+        expect(await this.access.connect(this.signers[1]).feeAmount(1)).to.equal(bnHundred)
+
+        await expect(
+            this.access.connect(this.signers[2])
+                .changeAssetFee(1, bnTwoHundred)
+        ).to.be.revertedWith("Only the asset owner can call this function")
+
+        expect(await this.access.connect(this.signers[1]).feeAmount(1)).to.equal(bnHundred)
+
+        this.access.connect(this.signers[1]).changeAssetFee(1, bnTwoHundred)
+        expect(await this.access.connect(this.signers[1]).feeAmount(1)).to.equal(bnTwoHundred)
+    })
+
 })
 
 // returns the amount spent in gas in a transaction as a BN
