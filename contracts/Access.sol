@@ -14,8 +14,7 @@ contract Access is Ownable {
     uint256 counter;
     // 100% = 10000
     uint constant contractFeeBase = 10000;
-    uint contractFee;
-    uint feeMultiplier;
+    uint public contractFee;
     uint public contractFeesAccrued;
 
     // asset -> wallet -> hasAccess
@@ -61,11 +60,11 @@ contract Access is Ownable {
     }
 
     // admin
-    function changeFee(uint256 _id, uint256 _fee) onlyAssetOwner(_id) public {
+    function changeAssetFee(uint256 _id, uint256 _fee) onlyAssetOwner(_id) public {
         feeAmount[_id] = _fee;
     }
 
-    function changeOwner(uint256 _id, address _newOwner) onlyAssetOwner(_id) public {
+    function changeAssetOwner(uint256 _id, address _newOwner) onlyAssetOwner(_id) public {
         owners[_id] = payable(_newOwner);
     }
 }
