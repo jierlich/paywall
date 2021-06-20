@@ -3,14 +3,14 @@
 pragma solidity >=0.7.0 <0.9.0;
 
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title Access
  * @dev Check if a user has access to a non-crypto digital asset
  *      Ex. Article paywall
  */
-contract Access {
-
+contract Access is Ownable {
     uint256 counter;
     // 100% = 10000
     uint constant contractFeeBase = 10000;
