@@ -11,6 +11,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  *      Ex. Article paywall
  */
 contract Access is Ownable {
+
+    using SafeMath for uint;
+
     uint256 counter;
     // 100% = 10000
     uint constant contractFeeBase = 10000;
@@ -27,7 +30,7 @@ contract Access is Ownable {
         require(owners[_id] == msg.sender, "Only the asset owner can call this function");
         _;
     }
-    
+
     event AssetCreated(uint256 indexed _id, address _owner);
 
     constructor() {
@@ -41,17 +44,17 @@ contract Access is Ownable {
         emit AssetCreated(counter, _owner);
         return counter;
     }
-    
+
     function grantAccess(uint256 _id, address _addr) public payable {
         require(_id <= counter, 'Asset does not exist');
         require(msg.value == feeAmount[_id], 'Incorrect fee amount');
-        uint contractFeeAmount = SafeMath.div(SafeMath.mul(msg.value, contractFee), contractFeeBase);
-        uint ownerFeeAmount = SafeMath.sub(msg.value, contractFeeAmount);
+        uint contractFeeAmount = msg.value.mul(contractFee).div(contractFeeBase);
+        uint ownerFeeAmount = msg.value.sub(contractFeeAmount);
         pendingWithdrawals[_id] += ownerFeeAmount;
         contractFeesAccrued += contractFeeAmount;
         addressHasAccess[_id][_addr] = true;
     }
-    
+
     function withdraw(uint256 _id) onlyAssetOwner(_id) public {
         address payable assetOwner = owners[_id];
         uint amountToWithdraw = pendingWithdrawals[_id];
