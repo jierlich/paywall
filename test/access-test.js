@@ -12,9 +12,9 @@ describe("Access", () => {
     const bnTwoHundred = new ethers.BigNumber.from(200)
 
     beforeEach(async () => {
-        const AccessContract = await ethers.getContractFactory("Access")
-        this.access = await AccessContract.deploy()
         this.signers = await ethers.getSigners()
+        const AccessContract = await ethers.getContractFactory("Access", this.signers[10])
+        this.access = await AccessContract.deploy()
         await this.access.deployed()
     })
 
@@ -124,7 +124,7 @@ describe("Access", () => {
                 .changeAssetOwner(1, this.signers[2].address)
         ).to.be.revertedWith("Only the asset owner can call this function")
 
-        // failed new owner not applied
+        // withdraw failed as new owner not applied
         await expect (
             this.access.connect(this.signers[2])
                 .withdraw(1)
@@ -157,6 +157,79 @@ describe("Access", () => {
         expect(await this.access.connect(this.signers[1]).feeAmount(1)).to.equal(bnTwoHundred)
     })
 
+    it("Should only let contract owner withdraw funds", async () => {
+        await this.access.connect(this.signers[1])
+            .create(bnHundred, this.signers[1].address)
+
+        await this.access.connect(this.signers[2])
+            .grantAccess(1, this.signers[2].address, {value: bnHundred})
+
+        // non-owner attempts withdrawal
+        await expect (
+            this.access.connect(this.signers[2])
+                .contractWithdraw()
+        ).to.be.revertedWith("Ownable: caller is not the owner")
+
+        const initialBalance = await ethers.provider.getBalance(this.signers[10].address)
+
+        // Owner attempts withdrawal
+        const withdraw = await this.access.connect(this.signers[10]).contractWithdraw()
+        const gasCost = await calculateGasCost(withdraw)
+        const expectedBalance = initialBalance.add(bnOne).sub(gasCost)
+        const newBalance = await ethers.provider.getBalance(this.signers[10].address)
+        expect(newBalance).to.equal(expectedBalance)
+    })
+
+
+    it("Should only let contract owner change contract owner", async () => {
+        await this.access.connect(this.signers[1])
+            .create(bnHundred, this.signers[1].address)
+
+        // fail to change owner
+        await expect(
+            this.access.connect(this.signers[1])
+                .transferOwnership(this.signers[2].address)
+        ).to.be.revertedWith("Ownable: caller is not the owner")
+
+
+        // withdraw failed as new owner not applied
+        await expect(
+            this.access.connect(this.signers[1])
+                .contractWithdraw()
+        ).to.be.revertedWith("Ownable: caller is not the owner")
+
+        this.access.connect(this.signers[10])
+            .contractWithdraw()
+
+        this.access.connect(this.signers[10])
+            .transferOwnership(this.signers[2].address)
+
+        await expect (
+            this.access.connect(this.signers[10])
+                .contractWithdraw()
+        ).to.be.revertedWith("Ownable: caller is not the owner")
+
+        this.access.connect(this.signers[2])
+            .contractWithdraw()
+    })
+
+    it("Should only let contract owner change contract fee", async () => {
+        await this.access.connect(this.signers[1])
+            .create(bnHundred, this.signers[1].address)
+
+        expect(await this.access.connect(this.signers[10]).contractFee()).to.equal(bnHundred)
+
+        await expect(
+            this.access.connect(this.signers[2])
+                .changeContractFee(bnTwoHundred)
+        ).to.be.revertedWith("Ownable: caller is not the owner")
+
+        expect(await this.access.connect(this.signers[1]).contractFee()).to.equal(bnHundred)
+
+        this.access.connect(this.signers[10]).changeContractFee(bnTwoHundred)
+        expect(await this.access.connect(this.signers[1]).contractFee()).to.equal(bnTwoHundred)
+
+    })
 })
 
 // returns the amount spent in gas in a transaction as a BN
