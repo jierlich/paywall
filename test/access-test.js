@@ -239,6 +239,55 @@ describe("Access", () => {
         expect(await this.access.connect(this.signers[1]).contractFee()).to.equal(bnTwoHundred)
 
     })
+
+    // Payout Edge Cases
+    //
+
+    it("Should not charge the user if there is no asset fee", async () => {
+        await this.access.connect(this.signers[1])
+            .create(bnZero, this.signers[1].address)
+
+        await this.access.connect(this.signers[2])
+            .grantAccess(1, this.signers[2].address)
+
+        // expect no fees paid
+        expect(await this.access.pendingWithdrawals(bnOne)).to.equal(bnZero)
+        expect(await this.access.contractFeesAccrued()).to.equal(bnZero)
+
+        await expect(
+            this.access.connect(this.signers[3])
+                .grantAccess(1, this.signers[3].address, {value: bnHundred})
+        ).to.be.revertedWith("Incorrect fee amount")
+
+        // expect no fees paid
+        expect(await this.access.pendingWithdrawals(bnOne)).to.equal(bnZero)
+        expect(await this.access.contractFeesAccrued()).to.equal(bnZero)
+    })
+
+    it("Should give asset owner the full amount if there is no contract fee", async () => {
+        await this.access.connect(this.signers[1])
+            .create(bnHundred, this.signers[1].address)
+
+        // Set contract fee to zero
+        await this.access.connect(this.signers[10])
+            .changeContractFee(bnZero)
+
+        await this.access.connect(this.signers[2])
+            .grantAccess(1, this.signers[2].address, {value: bnHundred})
+
+        // expect fee amounts
+        expect(await this.access.pendingWithdrawals(bnOne)).to.equal(bnHundred)
+        expect(await this.access.contractFeesAccrued()).to.equal(bnZero)
+
+        // withdraw as expected
+        const initialBalance = await ethers.provider.getBalance(this.signers[1].address)
+        const withdraw = await this.access.connect(this.signers[1]).withdraw(bnOne)
+        const gasCost = await calculateGasCost(withdraw)
+        const expectedBalance = initialBalance.add(bnHundred).sub(gasCost)
+        const newBalance = await ethers.provider.getBalance(this.signers[1].address)
+        expect(newBalance).to.equal(expectedBalance)
+    })
+
 })
 
 // returns the amount spent in gas in a transaction as a BN
