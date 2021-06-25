@@ -66,4 +66,16 @@ contract Access is Ownable {
     function changeAssetOwner(uint256 _id, address _newOwner) onlyAssetOwner(_id) public {
         owners[_id] = payable(_newOwner);
     }
+
+    // only owner
+    function changeContractFee(uint _contractFee) onlyOwner() public {
+        contractFee = _contractFee;
+    }
+
+    function contractWithdraw() onlyOwner() public {
+        address payable contractOwner = payable(owner());
+        uint withdrawValue = contractFeesAccrued;
+        contractFeesAccrued = 0;
+        contractOwner.transfer(withdrawValue);
+    }
 }
