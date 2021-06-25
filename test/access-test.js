@@ -16,6 +16,7 @@ describe("Access", () => {
         const AccessContract = await ethers.getContractFactory("Access", this.signers[10])
         this.access = await AccessContract.deploy()
         await this.access.deployed()
+        await this.access.connect(this.signers[10]).changeContractFee(bnHundred)
     })
 
     // Creation and Access Control

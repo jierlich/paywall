@@ -33,10 +33,6 @@ contract Access is Ownable {
 
     event AssetCreated(uint256 indexed _id, address _owner);
 
-    constructor() {
-        contractFee = 100;
-    }
-
     function create(uint256 _fee, address _owner) public returns (uint256) {
         counter += 1;
         feeAmount[counter] = _fee;
