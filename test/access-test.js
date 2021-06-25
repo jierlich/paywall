@@ -18,6 +18,9 @@ describe("Access", () => {
         await this.access.deployed()
     })
 
+    // Creation and Access Control
+    //
+
     it("Should create an accessable asset", async () => {
         // Static call verifies correct return value without altering state
         const createCallStatic = await this.access.connect(this.signers[0])
@@ -91,6 +94,9 @@ describe("Access", () => {
         ).to.be.revertedWith("Incorrect fee amount")
     })
 
+    // Asset Owner Administrative
+    //
+
     it("Should only let asset owner withdraw funds", async () => {
         await this.access.connect(this.signers[1])
             .create(bnHundred, this.signers[1].address)
@@ -156,6 +162,9 @@ describe("Access", () => {
         this.access.connect(this.signers[1]).changeAssetFee(1, bnTwoHundred)
         expect(await this.access.connect(this.signers[1]).feeAmount(1)).to.equal(bnTwoHundred)
     })
+
+    // Contract Owner Administrative
+    //
 
     it("Should only let contract owner withdraw funds", async () => {
         await this.access.connect(this.signers[1])
