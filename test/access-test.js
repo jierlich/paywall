@@ -7,16 +7,20 @@ const ASSET_CREATED = "AssetCreated"
 describe("Access", () => {
     const bnZero = new ethers.BigNumber.from(0)
     const bnOne = new ethers.BigNumber.from(1)
-    const bnNinetyNine = new ethers.BigNumber.from(99)
-    const bnHundred = new ethers.BigNumber.from(100)
-    const bnTwoHundred = new ethers.BigNumber.from(200)
+    const oneEther = new ethers.BigNumber.from("1000000000000000000");
+    const contractFee0 = oneEther.div(new ethers.BigNumber.from(10**6))
+    const contractFee1 = oneEther.div(new ethers.BigNumber.from(10**5))
+    const assetFee0 = ethers.utils.parseUnits("0.001", "ether")
+    const assetFee1 = ethers.utils.parseUnits("0.002", "ether")
+    const contractFeeReceived0 = assetFee0.mul(contractFee0).div(oneEther)
+    const assetFeeReceived0 = assetFee0 - contractFeeReceived0
 
     beforeEach(async () => {
         this.signers = await ethers.getSigners()
         const AccessContract = await ethers.getContractFactory("Access", this.signers[10])
         this.access = await AccessContract.deploy()
         await this.access.deployed()
-        await this.access.connect(this.signers[10]).changeContractFee(bnHundred)
+        await this.access.connect(this.signers[10]).changeContractFee(contractFee0)
     })
 
     // Creation and Access Control
@@ -25,12 +29,12 @@ describe("Access", () => {
     it("Should create an accessable asset", async () => {
         // Static call verifies correct return value without altering state
         const createCallStatic = await this.access.connect(this.signers[0])
-            .callStatic.create(bnHundred, this.signers[0].address)
+            .callStatic.create(assetFee0, this.signers[0].address)
         expect(createCallStatic).to.equal(bnOne)
 
         // Non-static call changes state and checks emitted event
         const createCall = await this.access.connect(this.signers[0])
-            .create(bnHundred, this.signers[0].address)
+            .create(assetFee0, this.signers[0].address)
         await expect(createCall).to.emit(this.access, ASSET_CREATED)
             .withArgs(new ethers.BigNumber.from(1), this.signers[0].address)
     })
@@ -38,7 +42,7 @@ describe("Access", () => {
     // grant access to an asset that does exist, check access before and expect false, after and expect true
     it("Should provide access only if granted", async () => {
         await this.access.connect(this.signers[0])
-            .create(bnHundred, this.signers[0].address)
+            .create(assetFee0, this.signers[0].address)
 
         expect(await this.access.addressHasAccess(1, this.signers[1].address)).to.equal(false)
         expect(await this.access.pendingWithdrawals(bnOne)).to.equal(bnZero)
@@ -46,16 +50,16 @@ describe("Access", () => {
 
         // grant access to self
         await this.access.connect(this.signers[1])
-            .grantAccess(1, this.signers[1].address, {value: bnHundred})
+            .grantAccess(1, this.signers[1].address, {value: assetFee0})
 
         expect(await this.access.addressHasAccess(1, this.signers[1].address)).to.equal(true)
-        expect(await this.access.pendingWithdrawals(bnOne)).to.equal(bnNinetyNine)
-        expect(await this.access.contractFeesAccrued()).to.equal(bnOne)
+        expect(await this.access.pendingWithdrawals(bnOne)).to.equal(assetFeeReceived0)
+        expect(await this.access.contractFeesAccrued()).to.equal(contractFeeReceived0)
     })
 
     it("Should only give grantee access not grantor if gifted", async () => {
         await this.access.connect(this.signers[0])
-            .create(bnHundred, this.signers[0].address)
+            .create(assetFee0, this.signers[0].address)
 
         // grant access to other. Grantee has access, grantor does not
         expect(await this.access.addressHasAccess(1, this.signers[2].address)).to.equal(false)
@@ -65,24 +69,24 @@ describe("Access", () => {
 
         // signer 2 gifts access to signer 3
         await this.access.connect(this.signers[2])
-            .grantAccess(1, this.signers[3].address, {value: bnHundred})
+            .grantAccess(1, this.signers[3].address, {value: assetFee0})
 
         expect(await this.access.addressHasAccess(1, this.signers[2].address)).to.equal(false)
         expect(await this.access.addressHasAccess(1, this.signers[3].address)).to.equal(true)
-        expect(await this.access.pendingWithdrawals(bnOne)).to.equal(bnNinetyNine)
-        expect(await this.access.contractFeesAccrued()).to.equal(bnOne)
+        expect(await this.access.pendingWithdrawals(bnOne)).to.equal(assetFeeReceived0)
+        expect(await this.access.contractFeesAccrued()).to.equal(contractFeeReceived0)
     })
 
     it("Should not grant access to a non-existent asset", async () => {
         await expect(
             this.access.connect(this.signers[1])
-            .grantAccess(1, this.signers[1].address, {value: bnHundred})
+            .grantAccess(1, this.signers[1].address, {value: assetFeeReceived0})
         ).to.be.revertedWith("Asset does not exist")
     })
 
     it("Should not grant access when paid the wrong amount", async () => {
         await this.access.connect(this.signers[0])
-            .create(bnHundred, this.signers[0].address)
+            .create(assetFee0, this.signers[0].address)
 
         await expect(
             this.access.connect(this.signers[1])
@@ -91,7 +95,7 @@ describe("Access", () => {
 
         await expect(
             this.access.connect(this.signers[1])
-            .grantAccess(1, this.signers[1].address, {value: bnTwoHundred})
+            .grantAccess(1, this.signers[1].address, {value: oneEther})
         ).to.be.revertedWith("Incorrect fee amount")
     })
 
@@ -100,10 +104,10 @@ describe("Access", () => {
 
     it("Should only let asset owner withdraw funds", async () => {
         await this.access.connect(this.signers[1])
-            .create(bnHundred, this.signers[1].address)
+            .create(assetFee0, this.signers[1].address)
 
         await this.access.connect(this.signers[2])
-            .grantAccess(1, this.signers[2].address, {value: bnHundred})
+            .grantAccess(1, this.signers[2].address, {value: assetFee0})
 
         // non-owner attempts withdrawal
         await expect (
@@ -116,14 +120,14 @@ describe("Access", () => {
         // Owner attempts withdrawal
         const withdraw = await this.access.connect(this.signers[1]).withdraw(1)
         const gasCost = await calculateGasCost(withdraw)
-        const expectedBalance = initialBalance.add(bnNinetyNine).sub(gasCost)
+        const expectedBalance = initialBalance.add(assetFeeReceived0).sub(gasCost)
         const newBalance = await ethers.provider.getBalance(this.signers[1].address)
         expect(newBalance).to.equal(expectedBalance)
     })
 
     it("Should only let asset owner change asset owner", async () => {
         await this.access.connect(this.signers[1])
-            .create(bnHundred, this.signers[1].address)
+            .create(assetFee0, this.signers[1].address)
 
         // fail to change owner
         await expect(
@@ -149,19 +153,19 @@ describe("Access", () => {
 
     it("Should only let asset owner change asset fee", async () => {
         await this.access.connect(this.signers[1])
-            .create(bnHundred, this.signers[1].address)
+            .create(assetFee0, this.signers[1].address)
 
-        expect(await this.access.connect(this.signers[1]).feeAmount(1)).to.equal(bnHundred)
+        expect(await this.access.connect(this.signers[1]).feeAmount(1)).to.equal(assetFee0)
 
         await expect(
             this.access.connect(this.signers[2])
-                .changeAssetFee(1, bnTwoHundred)
+                .changeAssetFee(1, assetFee1)
         ).to.be.revertedWith("Only the asset owner can call this function")
 
-        expect(await this.access.connect(this.signers[1]).feeAmount(1)).to.equal(bnHundred)
+        expect(await this.access.connect(this.signers[1]).feeAmount(1)).to.equal(assetFee0)
 
-        this.access.connect(this.signers[1]).changeAssetFee(1, bnTwoHundred)
-        expect(await this.access.connect(this.signers[1]).feeAmount(1)).to.equal(bnTwoHundred)
+        this.access.connect(this.signers[1]).changeAssetFee(1, assetFee1)
+        expect(await this.access.connect(this.signers[1]).feeAmount(1)).to.equal(assetFee1)
     })
 
     // Contract Owner Administrative
@@ -169,10 +173,10 @@ describe("Access", () => {
 
     it("Should only let contract owner withdraw funds", async () => {
         await this.access.connect(this.signers[1])
-            .create(bnHundred, this.signers[1].address)
+            .create(assetFee0, this.signers[1].address)
 
         await this.access.connect(this.signers[2])
-            .grantAccess(1, this.signers[2].address, {value: bnHundred})
+            .grantAccess(1, this.signers[2].address, {value: assetFee0})
 
         // non-owner attempts withdrawal
         await expect (
@@ -185,15 +189,14 @@ describe("Access", () => {
         // Owner attempts withdrawal
         const withdraw = await this.access.connect(this.signers[10]).contractWithdraw()
         const gasCost = await calculateGasCost(withdraw)
-        const expectedBalance = initialBalance.add(bnOne).sub(gasCost)
+        const expectedBalance = initialBalance.add(contractFeeReceived0).sub(gasCost)
         const newBalance = await ethers.provider.getBalance(this.signers[10].address)
         expect(newBalance).to.equal(expectedBalance)
     })
 
-
     it("Should only let contract owner change contract owner", async () => {
         await this.access.connect(this.signers[1])
-            .create(bnHundred, this.signers[1].address)
+            .create(assetFee0, this.signers[1].address)
 
         // fail to change owner
         await expect(
@@ -225,19 +228,19 @@ describe("Access", () => {
 
     it("Should only let contract owner change contract fee", async () => {
         await this.access.connect(this.signers[1])
-            .create(bnHundred, this.signers[1].address)
+            .create(assetFee0, this.signers[1].address)
 
-        expect(await this.access.connect(this.signers[10]).contractFee()).to.equal(bnHundred)
+        expect(await this.access.connect(this.signers[10]).contractFee()).to.equal(contractFee0)
 
         await expect(
             this.access.connect(this.signers[2])
-                .changeContractFee(bnTwoHundred)
+                .changeContractFee(contractFee1)
         ).to.be.revertedWith("Ownable: caller is not the owner")
 
-        expect(await this.access.connect(this.signers[1]).contractFee()).to.equal(bnHundred)
+        expect(await this.access.connect(this.signers[1]).contractFee()).to.equal(contractFee0)
 
-        this.access.connect(this.signers[10]).changeContractFee(bnTwoHundred)
-        expect(await this.access.connect(this.signers[1]).contractFee()).to.equal(bnTwoHundred)
+        this.access.connect(this.signers[10]).changeContractFee(contractFee1)
+        expect(await this.access.connect(this.signers[1]).contractFee()).to.equal(contractFee1)
 
     })
 
@@ -257,7 +260,7 @@ describe("Access", () => {
 
         await expect(
             this.access.connect(this.signers[3])
-                .grantAccess(1, this.signers[3].address, {value: bnHundred})
+                .grantAccess(1, this.signers[3].address, {value: assetFee0})
         ).to.be.revertedWith("Incorrect fee amount")
 
         // expect no fees paid
@@ -267,28 +270,27 @@ describe("Access", () => {
 
     it("Should give asset owner the full amount if there is no contract fee", async () => {
         await this.access.connect(this.signers[1])
-            .create(bnHundred, this.signers[1].address)
+            .create(assetFee0, this.signers[1].address)
 
         // Set contract fee to zero
         await this.access.connect(this.signers[10])
             .changeContractFee(bnZero)
 
         await this.access.connect(this.signers[2])
-            .grantAccess(1, this.signers[2].address, {value: bnHundred})
+            .grantAccess(1, this.signers[2].address, {value: assetFee0})
 
         // expect fee amounts
-        expect(await this.access.pendingWithdrawals(bnOne)).to.equal(bnHundred)
+        expect(await this.access.pendingWithdrawals(bnOne)).to.equal(assetFee0)
         expect(await this.access.contractFeesAccrued()).to.equal(bnZero)
 
         // withdraw as expected
         const initialBalance = await ethers.provider.getBalance(this.signers[1].address)
         const withdraw = await this.access.connect(this.signers[1]).withdraw(bnOne)
         const gasCost = await calculateGasCost(withdraw)
-        const expectedBalance = initialBalance.add(bnHundred).sub(gasCost)
+        const expectedBalance = initialBalance.add(assetFee0).sub(gasCost)
         const newBalance = await ethers.provider.getBalance(this.signers[1].address)
         expect(newBalance).to.equal(expectedBalance)
     })
-
 })
 
 // returns the amount spent in gas in a transaction as a BN

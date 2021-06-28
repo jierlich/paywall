@@ -15,8 +15,7 @@ contract Access is Ownable {
     using SafeMath for uint;
 
     uint256 counter;
-    // 100% = 10000
-    uint constant contractFeeBase = 10000;
+    uint constant contractFeeBase = 1 ether;
     uint public contractFee;
     uint public contractFeesAccrued;
 
