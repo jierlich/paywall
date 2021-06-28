@@ -64,6 +64,7 @@ contract Paywall is Ownable {
     function grantAccess(uint256 _id, address _addr) public payable {
         require(_id <= counter, 'Asset does not exist');
         require(msg.value == feeAmount[_id], 'Incorrect fee amount');
+        require(addressHasAccess[_id][_addr] == false, 'Address already has access');
         uint contractFeeAmount = msg.value.mul(contractFee).div(contractFeeBase);
         uint ownerFeeAmount = msg.value.sub(contractFeeAmount);
         pendingWithdrawals[_id] += ownerFeeAmount;

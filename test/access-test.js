@@ -99,6 +99,20 @@ describe("Paywall", () => {
         ).to.be.revertedWith("Incorrect fee amount")
     })
 
+    it("Should not grant access if an address already has access", async () => {
+        await this.paywall.connect(this.signers[0])
+            .create(assetFee0, this.signers[0].address)
+
+        await this.paywall.connect(this.signers[1])
+            .grantAccess(1, this.signers[1].address, {value: assetFee0})
+
+        await expect(
+            this.paywall.connect(this.signers[1])
+                .grantAccess(1, this.signers[1].address, {value: assetFee0})
+        ).to.be.revertedWith("Address already has access")
+
+    })
+
     // Asset Owner Administrative
     //
 
