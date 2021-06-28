@@ -6,11 +6,11 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
- * @title Access
+ * @title Paywall
  * @dev Check if a user has access to a non-crypto digital asset
  *      Ex. Article paywall
  */
-contract Access is Ownable {
+contract Paywall is Ownable {
 
     using SafeMath for uint;
 

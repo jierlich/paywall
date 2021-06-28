@@ -1,7 +1,7 @@
 {
-  "name": "y",
-  "version": "0.0.1",
-  "description": "Lightweight payments tooling for access to digital assets",
+  "name": "Paywall",
+  "version": "0.1.0",
+  "description": "Lightweight payments tooling for access to non-tokenized digital assets",
   "scripts": {
     "test": "npx hardhat test"
   },
