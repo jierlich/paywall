@@ -80,7 +80,7 @@ describe("Paywall", () => {
     it("Should not grant access to a non-existent asset", async () => {
         await expect(
             this.paywall.connect(this.signers[1])
-            .grantAccess(1, this.signers[1].address, {value: assetFeeReceived0})
+                .grantAccess(1, this.signers[1].address, {value: assetFeeReceived0})
         ).to.be.revertedWith("Asset does not exist")
     })
 
@@ -90,12 +90,12 @@ describe("Paywall", () => {
 
         await expect(
             this.paywall.connect(this.signers[1])
-            .grantAccess(1, this.signers[1].address, {value: bnOne})
+                .grantAccess(1, this.signers[1].address, {value: bnOne})
         ).to.be.revertedWith("Incorrect fee amount")
 
         await expect(
             this.paywall.connect(this.signers[1])
-            .grantAccess(1, this.signers[1].address, {value: oneEther})
+                .grantAccess(1, this.signers[1].address, {value: oneEther})
         ).to.be.revertedWith("Incorrect fee amount")
     })
 
@@ -135,20 +135,20 @@ describe("Paywall", () => {
                 .changeAssetOwner(1, this.signers[2].address)
         ).to.be.revertedWith("Only the asset owner can call this function")
 
-        // withdraw failed as new owner not applied
+        // changeAssetFee failed as new owner not applied
         await expect (
             this.paywall.connect(this.signers[2])
-                .withdraw(1)
+                .changeAssetFee(1, assetFee1)
         ).to.be.revertedWith("Only the asset owner can call this function")
 
-        this.paywall.connect(this.signers[1]).changeAssetOwner(1, this.signers[2].address)
+        await this.paywall.connect(this.signers[1]).changeAssetOwner(1, this.signers[2].address)
 
         await expect (
             this.paywall.connect(this.signers[1])
-                .withdraw(1)
+                .changeAssetFee(1, assetFee1)
         ).to.be.revertedWith("Only the asset owner can call this function")
-        this.paywall.connect(this.signers[2])
-                .withdraw(1)
+        await this.paywall.connect(this.signers[2])
+            .changeAssetFee(1, assetFee1)
     })
 
     it("Should only let asset owner change asset fee", async () => {
@@ -205,25 +205,25 @@ describe("Paywall", () => {
         ).to.be.revertedWith("Ownable: caller is not the owner")
 
 
-        // withdraw failed as new owner not applied
+        // changeContractFee failed as new owner not applied
         await expect(
             this.paywall.connect(this.signers[1])
-                .contractWithdraw()
+                .changeContractFee(contractFee1)
         ).to.be.revertedWith("Ownable: caller is not the owner")
 
         this.paywall.connect(this.signers[10])
-            .contractWithdraw()
+            .changeContractFee(contractFee1)
 
         this.paywall.connect(this.signers[10])
             .transferOwnership(this.signers[2].address)
 
         await expect (
             this.paywall.connect(this.signers[10])
-                .contractWithdraw()
+                .changeContractFee(contractFee0)
         ).to.be.revertedWith("Ownable: caller is not the owner")
 
         this.paywall.connect(this.signers[2])
-            .contractWithdraw()
+            .changeContractFee(contractFee0)
     })
 
     it("Should only let contract owner change contract fee", async () => {
@@ -241,7 +241,6 @@ describe("Paywall", () => {
 
         this.paywall.connect(this.signers[10]).changeContractFee(contractFee1)
         expect(await this.paywall.connect(this.signers[1]).contractFee()).to.equal(contractFee1)
-
     })
 
     // Payout Edge Cases
@@ -290,6 +289,74 @@ describe("Paywall", () => {
         const expectedBalance = initialBalance.add(assetFee0).sub(gasCost)
         const newBalance = await ethers.provider.getBalance(this.signers[1].address)
         expect(newBalance).to.equal(expectedBalance)
+    })
+
+    it("Should not allow asset owners to perform double withdrawals", async () => {
+        await this.paywall.connect(this.signers[1])
+            .create(assetFee0, this.signers[1].address)
+
+        await this.paywall.connect(this.signers[2])
+            .grantAccess(1, this.signers[2].address, {value: assetFee0})
+
+        const initialBalance0 = await ethers.provider.getBalance(this.signers[1].address)
+
+        // Owner attempts first withdrawal after payment
+        const withdraw0 = await this.paywall.connect(this.signers[1]).withdraw(1)
+        const gasCost0 = await calculateGasCost(withdraw0)
+        const expectedBalance0 = initialBalance0.add(assetFeeReceived0).sub(gasCost0)
+        const newBalance0 = await ethers.provider.getBalance(this.signers[1].address)
+        expect(newBalance0).to.equal(expectedBalance0)
+
+        // Owner attempts second withdrawal after no payment
+        await expect (
+            this.paywall.connect(this.signers[1]).withdraw(1)
+        ).to.be.revertedWith("No funds to withdraw for this asset")
+
+        const initialBalance1 = await ethers.provider.getBalance(this.signers[1].address)
+
+        await this.paywall.connect(this.signers[3])
+            .grantAccess(1, this.signers[3].address, {value: assetFee0})
+
+        // Owner attemps third withdrawal after additional payment
+        const withdraw1 = await this.paywall.connect(this.signers[1]).withdraw(1)
+        const gasCost1 = await calculateGasCost(withdraw1)
+        const expectedBalance1 = initialBalance1.add(assetFeeReceived0).sub(gasCost1)
+        const newBalance1 = await ethers.provider.getBalance(this.signers[1].address)
+        expect(newBalance1).to.equal(expectedBalance1)
+    })
+
+    it("Should not allow contract owner to perform double withdrawals", async () => {
+        await this.paywall.connect(this.signers[1])
+            .create(assetFee0, this.signers[1].address)
+
+        await this.paywall.connect(this.signers[2])
+            .grantAccess(1, this.signers[2].address, {value: assetFee0})
+
+        const initialBalance0 = await ethers.provider.getBalance(this.signers[10].address)
+
+        // Owner attempts first withdrawal after payment
+        const withdraw0 = await this.paywall.connect(this.signers[10]).contractWithdraw()
+        const gasCost0 = await calculateGasCost(withdraw0)
+        const expectedBalance0 = initialBalance0.add(contractFeeReceived0).sub(gasCost0)
+        const newBalance0 = await ethers.provider.getBalance(this.signers[10].address)
+        expect(newBalance0).to.equal(expectedBalance0)
+
+        // Owner attempts second withdrawal after no payment
+        await expect (
+            this.paywall.connect(this.signers[10]).contractWithdraw()
+        ).to.be.revertedWith("No funds to withdraw")
+
+        await this.paywall.connect(this.signers[3])
+        .grantAccess(1, this.signers[3].address, {value: assetFee0})
+
+        const initialBalance1 = await ethers.provider.getBalance(this.signers[10].address)
+
+        // Owner attempts third withdrawal after payment
+        const withdraw1 = await this.paywall.connect(this.signers[10]).contractWithdraw()
+        const gasCost1 = await calculateGasCost(withdraw1)
+        const expectedBalance1 = initialBalance1.add(contractFeeReceived0).sub(gasCost1)
+        const newBalance1 = await ethers.provider.getBalance(this.signers[10].address)
+        expect(newBalance1).to.equal(expectedBalance1)
     })
 })
 

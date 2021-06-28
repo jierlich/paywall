@@ -74,6 +74,7 @@ contract Paywall is Ownable {
     /// @notice Withdraws funds paid for access to an asset
     /// @param _id Fees from the asset with this `_id` are withdrawn
     function withdraw(uint256 _id) onlyAssetOwner(_id) public {
+        require(pendingWithdrawals[_id] > 0, 'No funds to withdraw for this asset');
         address payable assetOwner = owners[_id];
         uint amountToWithdraw = pendingWithdrawals[_id];
         pendingWithdrawals[_id] = 0;
@@ -104,6 +105,7 @@ contract Paywall is Ownable {
 
     /// @notice Allows the contract owner to withdraw accrued fees
     function contractWithdraw() onlyOwner() public {
+        require(contractFeesAccrued > 0, 'No funds to withdraw');
         address payable contractOwner = payable(owner());
         uint withdrawValue = contractFeesAccrued;
         contractFeesAccrued = 0;
