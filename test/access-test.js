@@ -372,6 +372,17 @@ describe("Paywall", () => {
         const newBalance1 = await ethers.provider.getBalance(this.signers[10].address)
         expect(newBalance1).to.equal(expectedBalance1)
     })
+
+    it("Should reject funds sent directly to contract", async () => {
+        await expect (
+            this.signers[9].sendTransaction({
+                to: this.paywall.address,
+                value: oneEther
+            })
+        ).to.be.revertedWith("Invalid: do not send funds directly to contract")
+
+        expect(await ethers.provider.getBalance(this.paywall.address)).to.equal(bnZero)
+    })
 })
 
 // returns the amount spent in gas in a transaction as a BN

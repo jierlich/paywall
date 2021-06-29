@@ -112,4 +112,9 @@ contract Paywall is Ownable {
         contractFeesAccrued = 0;
         contractOwner.transfer(withdrawValue);
     }
+
+    /// @notice Catches any funds accidentally sent to contract directly
+    receive() external payable {
+        require(0 == 1, 'Invalid: do not send funds directly to contract');
+    }
 }
