@@ -1,13 +1,17 @@
 require("@nomiclabs/hardhat-waffle");
+const environment = require("./environment")
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
 module.exports = {
   defaultNetwork: "hardhat",
-  // Add test networks here when ready for easy deployment
-  // Should main net go here as well? It seems a bit
-  // fast and loose in terms of deployment practices.
-  // networks: {},
+  networks: {
+    hardhat: {},
+    matic_mumbai: {
+      url: "https://rpc-mumbai.maticvigil.com",
+      accounts: [environment.deployerPK]
+    }
+  },
   solidity: "0.8.1",
 };
