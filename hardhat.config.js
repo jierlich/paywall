@@ -13,5 +13,11 @@ module.exports = {
       accounts: [environment.deployerPK]
     }
   },
-  solidity: "0.8.1",
+  solidity: {
+    version: "0.8.3",
+    optimizer: {
+      enabled: true,
+      runs: 200
+    }
+  }
 };
