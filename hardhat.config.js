@@ -15,10 +15,10 @@ module.exports = {
     }
   },
   solidity: {
-    version: "0.8.3",
+    version: "0.8.4",
     optimizer: {
       enabled: true,
-      runs: 200
+      runs: 1_000_000
     }
   },
   etherscan: {
