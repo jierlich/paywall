@@ -1,4 +1,5 @@
 require("@nomiclabs/hardhat-waffle");
+require("@nomiclabs/hardhat-etherscan");
 const environment = require("./environment")
 
 /**
@@ -19,5 +20,8 @@ module.exports = {
       enabled: true,
       runs: 200
     }
+  },
+  etherscan: {
+    apiKey: environment.etherscanAPIKey
   }
 };
