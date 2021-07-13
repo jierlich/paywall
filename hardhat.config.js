@@ -9,6 +9,10 @@ module.exports = {
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {},
+    matic_mainnet: {
+      url: "https://rpc-mainnet.maticvigil.com",
+      accounts: [environment.deployerPK]
+    },
     matic_mumbai: {
       url: "https://rpc-mumbai.maticvigil.com",
       accounts: [environment.deployerPK]
