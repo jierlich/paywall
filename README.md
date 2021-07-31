@@ -18,11 +18,11 @@ the asset's `_id`
 
 ### Version 0.1.0
 
-SHA: `ec64da2088b91ba4311ef1da7775a5a1b0e9862c`
+SHA: [ec64da2088b91ba4311ef1da7775a5a1b0e9862c](https://github.com/jierlich/paywall/releases/tag/0.1.0)
 
-Polygon Mainnet: `0x0E90bC9E123B0ce43b854623A3cdF464A401A795`
+Polygon Mainnet: [0x0E90bC9E123B0ce43b854623A3cdF464A401A795](https://polygonscan.com/address/0x0e90bc9e123b0ce43b854623a3cdf464a401a795)
 
-Polygon Mumbai Testnet: `0x46E5Dd37c7ff88fb24259BB8ba42CC051ADC31c4`
+Polygon Mumbai Testnet: [0x46E5Dd37c7ff88fb24259BB8ba42CC051ADC31c4](https://mumbai.polygonscan.com/address/0x46E5Dd37c7ff88fb24259BB8ba42CC051ADC31c4)
 
 ### Why Polygon?
 Polygon has been selected because its network fees are low enough for micropayments. We are open to deploying on additional networks. Reach out on the discord to learn more.
