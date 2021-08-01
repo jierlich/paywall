@@ -1,12 +1,77 @@
 <!DOCTYPE html>
 <html>
-    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"
-        charset="utf-8"
-        type="text/javascript">
-    </script>
-    <script>
-    </script>
+<head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+</head>
 <body>
-    <div>Hello, Ethererum</div>
+    <h1>Paywall Demo</h1>
+    <button id='button' onclick='buttonClicked()'>Unlock Secret</button>
+    <div id='content'></div>
+    <br>
+    <div>Note: This demo site only works with Metamask and automatically connects when the button is clicked.</div>
 </body>
+<script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"
+    charset="utf-8"
+    type="text/javascript">
+</script>
+<script>
+    // Literals
+    const polygonChainId = 137
+    const abi = JSON.parse('[{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"_id","type":"uint256"},{"indexed":false,"internalType":"address","name":"_owner","type":"address"}],"name":"AssetCreated","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"address","name":"","type":"address"}],"name":"addressHasAccess","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"_id","type":"uint256"},{"internalType":"uint256","name":"_fee","type":"uint256"}],"name":"changeAssetFee","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_id","type":"uint256"},{"internalType":"address","name":"_owner","type":"address"}],"name":"changeAssetOwner","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_contractFee","type":"uint256"}],"name":"changeContractFee","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"contractFee","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"contractFeesAccrued","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"contractWithdraw","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_fee","type":"uint256"},{"internalType":"address","name":"_owner","type":"address"}],"name":"create","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"feeAmount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"_id","type":"uint256"},{"internalType":"address","name":"_addr","type":"address"}],"name":"grantAccess","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"owners","outputs":[{"internalType":"address payable","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"pendingWithdrawals","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_id","type":"uint256"}],"name":"withdraw","outputs":[],"stateMutability":"nonpayable","type":"function"},{"stateMutability":"payable","type":"receive"}]')
+    const address = '0x0E90bC9E123B0ce43b854623A3cdF464A401A795'
+    const sampleAssetID = 1
+    const sampleAssetPrice = ethers.BigNumber.from(ethers.utils.parseEther('.01'))
+    const secretText = 'Address has purchased access to the secret: 42'
+    const waitText = 'Your transaction has been sent. Please wait for it to be included.'
+
+    // Ethereum abstractions
+    const provider = new ethers.providers.Web3Provider(window.ethereum, "any")
+    const signer = provider.getSigner();
+    const contract = new ethers.Contract(address, abi, provider)
+
+    // DOM abstractions
+    const contents = document.getElementById('content')
+    const button = document.getElementById('button')
+
+    // Event Handlers
+    async function buttonClicked () {
+        const [account] = await window.ethereum.request({ method: 'eth_requestAccounts' })
+        const correctNetwork = await checkCorrectNetwork()
+        if (!correctNetwork) return
+        button.remove()
+        const hasAccess = await checkAccess(account)
+        if (!hasAccess) {
+            await purchaseAsset(account)
+        }
+        contents.innerHTML = secretText
+    }
+
+    // Ethereum Function
+    async function checkAccess (account) {
+        const access = await contract.connect(signer).addressHasAccess(1, account)
+        return access
+    }
+
+    async function purchaseAsset(account) {
+        const transaction = await contract.connect(signer).grantAccess(
+            sampleAssetID,
+            account,
+            {
+                value: sampleAssetPrice
+            }
+        )
+        contents.innerHTML = waitText
+        await transaction.wait()
+    }
+
+    async function checkCorrectNetwork () {
+        const network = await provider.getNetwork()
+        const correct = network.chainId === polygonChainId
+        if (!correct) {
+            alert('Incorrect network: Please switch to Polygon')
+        }
+        return correct
+    }
+</script>
 </html>
