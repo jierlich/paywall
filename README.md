@@ -4,6 +4,8 @@ Lightweight payments tooling for access to non-tokenized digital assets
 
 Ex. Pay $0.50 to read an article
 
+Demo Link: https://jierlich.github.io/paywall/
+
 ## Usage
 `create(uint256 _fee, address _owner)` - creates an asset with an access `_fee` and `_owner`, and emits an event with
 the asset's `_id`
