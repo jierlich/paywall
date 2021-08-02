@@ -1,6 +1,6 @@
 # Paywall Contract
 
-Lightweight payments tooling for access to non-tokenized digital assets
+Lightweight payments contract for access to non-tokenized digital assets
 
 Ex. Pay $0.50 to read an article
 
